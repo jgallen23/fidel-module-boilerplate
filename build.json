@@ -1,0 +1,36 @@
+{
+  "JAVASCRIPT": {
+    "DIST_DIR": "./dist/",
+    "fidel.module": [
+      "./lib/copyright.js",
+      "./lib/modal.js"
+    ],
+    "fidel.module.full": [
+      "./lib/copyright.js",
+      "./vendor/fidel.js",
+      "./lib/modal.js"
+    ]
+  },
+  "CSS": {
+    "DIST_DIR": "./dist/",
+    "fidel.module": [
+      "./stylesheets/copyright.css"
+    ]
+  },
+  "JSHINT_OPTS": {
+    "boss": true,
+    "forin": false,
+    "curly": true,
+    "debug": false,
+    "devel": false,
+    "evil": false,
+    "regexp": false,
+    "undef": false,
+    "sub": true,
+    "white": true,
+    "indent": 2,
+    "whitespace": true,
+    "asi": true
+  }
+}
+
