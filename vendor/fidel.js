@@ -1,6 +1,6 @@
 /*!
   * Fidel - A javascript controller
-  * v1.2
+  * v1.2.2
   * https://github.com/jgallen23/fidel
   * copyright JGA 2011
   * MIT License
@@ -70,7 +70,6 @@
     function Class(opt) {
       // All construction is actually done in the init method
       if (!initializing) {
-        this.guid = f.guid();
         if (this.defaults) {
           for (var key in this.defaults) {
             if (typeof opt !== 'object' || !opt[key]) this[key] = this.defaults[key];
@@ -81,6 +80,7 @@
             this[okey] = opt[okey];
           }
         }
+        if (!this.guid) this.guid = f.guid();
         if (this._initialize) this._initialize.apply(this, arguments);
         if (this.init) this.init.apply(this, arguments);
       }
@@ -163,15 +163,15 @@
       if (!this.el) throw "el is required";
       
       this._subscribeHandles = {};
-      this._processedActions = {};
       if (this.events) this.delegateEvents();
       if (this.elements) this.refreshElements();
-      if (this.templateSelector) this.loadTemplate();
+      if (this.templates) this.loadTemplates();
       if (!this.actionEvent) this.actionEvent = "click";
       if (this.subscribe) this.bindSubscriptions();
       this.delegateActions();
       this.getDataElements();
     },
+    template: (window.str)?window.str.template:null,
     delegateEvents: function() {
       for (var key in this.events) {
         var methodName = this.events[key];
@@ -188,17 +188,12 @@
       }
     },
     delegateActions: function() {
-      var elements = this.find("[data-action]");
-      for (var i = 0, c = elements.length; i < c; i++) {
-        var elem = $(elements[i]);
-        var methodName = elem.attr("data-action");
-        var method = this.proxy(this[methodName]);
-        var eventName = this.actionEvent, selector = '[data-action="'+methodName+'"]';
-        if (!this._processedActions[methodName]) {
-          this.el.delegate(selector, eventName, method);
-          this._processedActions[methodName] = true;
-        }
-      }
+      var self = this;
+      this.el.delegate('[data-action]', this.actionEvent, function(e) {
+        var el = $(this);
+        var methodName = el.attr('data-action');
+        if (self[methodName]) self[methodName].call(self, el);
+      });
     },
     refreshElements: function() {
       for (var key in this.elements) {
@@ -209,8 +204,11 @@
       var self = this;
       var elements = this.find("[data-element]");
       for (var i = 0, c = elements.length; i < c; i++) {
-        var elem = $(elements[i]);
-        self[elem.attr("data-element")] = elem;
+        var name = elements[i].getAttribute('data-element');
+        if (!self[name]) {
+          var elem = this.find('[data-element="'+name+'"]');
+          self[name] = elem;
+        }
       }
     },
     bindSubscriptions: function() {
@@ -218,27 +216,24 @@
         this._subscribeHandles[key] = Fidel.subscribe(key, this.proxy(this[this.subscribe[key]]));
       }
     },
-    loadTemplate: function() {
-      this.template = $(this.templateSelector).html();
+    loadTemplates: function() {
+      for (var name in this.templates) {
+        this.templates[name] = $(this.templates[name]).html();
+      }
     },
     find: function(selector) {
       return $(selector, this.el[0]);
     },
-    render: function(data, selector) {
-      var str = window.str || $;
-      if (str) {
-        var tmp = str.template(this.template, data);
-        selector = (selector)?$(selector):this.el;
-        selector.html(tmp);
-      }
+    render: function(template, data, selector) {
+      var tmp = this.template(template, data);
+      selector = (selector)?$(selector):this.el;
+      selector.html(tmp);
     },
     destroy: function() {
       for (var key in this._subscribeHandles) {
         Fidel.unsubscribe(this._subscribeHandles[key]);
       }
-      for (var action in this._processedActions) {
-        this.el.unbind(action);
-      }
+      this.el.undelegate('[data-action]', this.actionEvent);
       this.el = null;
     }
   });
